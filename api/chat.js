@@ -96,7 +96,10 @@ REGLAS DE INTERACCIÓN CON EL USUARIO:
       config: {
         systemInstruction: systemInstruction,
         temperature: 0.7,
-        maxOutputTokens: 200
+        // Gemini 2.5 Flash razona ("thinking") y esos tokens consumen maxOutputTokens:
+        // con presupuesto de thinking en 0 la respuesta sale completa y más rápida.
+        maxOutputTokens: 500,
+        thinkingConfig: { thinkingBudget: 0 }
       }
     });
 
