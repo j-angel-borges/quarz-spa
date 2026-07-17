@@ -32,20 +32,23 @@ export default function App() {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           
-          {/* Logo QUARZ Geometric Crystal Badge */}
-          <div className="flex items-center space-x-3 cursor-pointer">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center border border-amber-400/50 shadow-md relative group">
-              <span className="font-black text-amber-400 font-mono text-lg tracking-wider group-hover:scale-105 transition-transform">Q</span>
+          {/* Logo official QUARZ Crystal Image */}
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className="relative group flex items-center">
+              <img 
+                src="/quarz-logo.png" 
+                alt="QUARZ Logo" 
+                className="h-12 w-auto object-contain rounded-lg shadow-sm border border-amber-400/30 group-hover:scale-105 transition-transform bg-white/50 p-1"
+              />
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full animate-ping"></span>
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-extrabold text-xl tracking-tight text-slate-900">QUARZ</span>
                 <span className="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">
                   Medical AI
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 font-mono leading-none">
+              <p className="text-[10px] text-slate-400 font-mono leading-none mt-1">
                 Vertex AI • Project: gen-lang-client-0929068122
               </p>
             </div>
@@ -137,11 +140,13 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-slate-400">
           
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 border border-amber-400/40 flex items-center justify-center font-bold text-amber-400 font-mono text-sm">
-              Q
-            </div>
+            <img 
+              src="/quarz-logo.png" 
+              alt="QUARZ Logo" 
+              className="h-10 w-auto object-contain rounded bg-white/10 p-1 border border-slate-700"
+            />
             <div>
-              <span className="font-extrabold text-white tracking-wide text-sm">QUARZ Systems</span>
+              <span className="font-extrabold text-white tracking-wide text-xs">Medical Systems AI</span>
               <p className="text-[10px] text-slate-500">Distribución Quirúrgica & Inteligencia Artificial Hospitalaria</p>
             </div>
           </div>
