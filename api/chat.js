@@ -19,7 +19,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Payload must contain a messages array.' });
   }
 
-  const apiKey = (process.env.GCP_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GCP_API_KEY || '').trim();
+  const projectId = process.env.GCP_PROJECT_ID || 'gen-lang-client-0929068122';
+  const location = process.env.GCP_LOCATION || 'us-central1';
 
   const systemInstruction = `
 Eres un capacitado y empático Appointment Setter profesional para una distribuidora mayorista de indumentaria clínica, batas esterilizadas e insumos hospitalarios.
@@ -33,26 +34,46 @@ REGLAS DE INTERACCIÓN CON EL USUARIO:
 `;
 
   try {
-    let aiResponseText = '';
+    // Direct Google Cloud Platform (GCP) Vertex AI Configuration
+    const options = {
+      vertexai: true,
+      project: projectId,
+      location: location
+    };
 
-    if (apiKey) {
-      const ai = new GoogleGenAI({ apiKey });
-      const contents = messages.map(m => ({
-        role: m.sender === 'user' ? 'user' : 'model',
-        parts: [{ text: m.text }]
-      }));
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: contents,
-        config: {
-          systemInstruction: systemInstruction,
-          temperature: 0.7,
-          maxOutputTokens: 200
-        }
-      });
-      aiResponseText = response.text ? response.text.trim() : '';
+    if (process.env.GCP_SERVICE_ACCOUNT_KEY) {
+      try {
+        options.credentials = JSON.parse(process.env.GCP_SERVICE_ACCOUNT_KEY);
+      } catch (e) {
+        console.error("Error parsing GCP_SERVICE_ACCOUNT_KEY:", e.message);
+      }
+    } else if (process.env.GCP_CLIENT_EMAIL && process.env.GCP_PRIVATE_KEY) {
+      options.credentials = {
+        client_email: process.env.GCP_CLIENT_EMAIL,
+        private_key: process.env.GCP_PRIVATE_KEY.replace(/\\n/g, '\n')
+      };
+    } else if (process.env.GCP_API_KEY) {
+      options.apiKey = process.env.GCP_API_KEY.trim();
     }
+
+    const ai = new GoogleGenAI(options);
+
+    const contents = messages.map(m => ({
+      role: m.sender === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text }]
+    }));
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: contents,
+      config: {
+        systemInstruction: systemInstruction,
+        temperature: 0.7,
+        maxOutputTokens: 200
+      }
+    });
+
+    const aiResponseText = response.text ? response.text.trim() : '';
 
     if (aiResponseText) {
       const triggerBooking = aiResponseText.includes("calendario de abajo") || aiResponseText.includes("perfil de distribución directa");
@@ -64,10 +85,10 @@ REGLAS DE INTERACCIÓN CON EL USUARIO:
     }
 
   } catch (err) {
-    console.error("Gemini API execution error:", err.message);
+    console.error("GCP Vertex AI Execution Error:", err.message);
   }
 
-  // Natural Fallback Engine
+  // Natural Fallback Engine if GCP API credentials are incomplete on Vercel
   const userLastMessage = messages[messages.length - 1]?.text || '';
   const lowerText = userLastMessage.toLowerCase().trim();
 
