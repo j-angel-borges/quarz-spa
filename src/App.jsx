@@ -4,13 +4,8 @@ import ServiceFeature from './components/ServiceFeature';
 import BookingCalendar from './components/BookingCalendar';
 import { 
   Sparkles, 
-  ShieldCheck, 
   Activity, 
-  Building2, 
-  CheckCircle,
-  Layers,
-  Clock,
-  Send
+  Bot
 } from 'lucide-react';
 
 export default function App() {
@@ -39,8 +34,8 @@ export default function App() {
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-8 text-xs font-semibold text-slate-600">
-            <a href="#simulator" className="hover:text-amber-700 transition">Simulador WhatsApp</a>
             <a href="#features" className="hover:text-amber-700 transition">Proceso 3 Pasos</a>
+            <a href="#simulator" className="hover:text-amber-700 transition">Simulador WhatsApp</a>
             <a href="#booking-calendar" className="hover:text-amber-700 transition">Agendamiento</a>
           </nav>
 
@@ -69,31 +64,37 @@ export default function App() {
           Automatiza la cualificación y agendamiento comercial de <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700">indumentaria e insumos médicos</span>
         </h1>
 
-        <p className="text-slate-600 text-base md:text-lg max-w-2xl mx-auto font-light leading-relaxed mb-12">
+        <p className="text-slate-600 text-base md:text-lg max-w-2xl mx-auto font-light leading-relaxed mb-8">
           Un simulador conversacional inteligente entrenado para el sector clínico hospitalario. Filtra solicitudes ajenas en tiempo real y gestiona citas comerciales directas.
         </p>
-
-        {/* WhatsApp Interactive Simulator Container */}
-        <div id="simulator" className="scroll-mt-24">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">
-              Prueba la Interacción del Agente en Vivo
-            </h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Interactúa como un comprador hospitalario o introduce una consulta de prueba.
-            </p>
-          </div>
-
-          <WhatsAppChat onTriggerBooking={scrollToCalendar} />
-        </div>
       </section>
 
-      {/* Service Explanation Section (3 Step Grid) */}
-      <div id="features" className="bg-slate-50/60 border-y border-slate-200/80">
+      {/* SECTION 1: Service Explanation Section (3 Step Grid) */}
+      <div id="features" className="bg-slate-50/60 border-y border-slate-200/80 py-6">
         <ServiceFeature />
       </div>
 
-      {/* Booking Calendar Section */}
+      {/* SECTION 2: WhatsApp Interactive Simulator Container */}
+      <section id="simulator" className="py-16 px-4 max-w-7xl mx-auto scroll-mt-24">
+        <div className="text-center max-w-3xl mx-auto mb-10 space-y-3">
+          <div className="inline-flex items-center space-x-2 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full text-xs font-semibold text-emerald-800">
+            <Bot className="w-4 h-4 text-emerald-600" />
+            <span>Demostración de IA Conversacional en Vivo</span>
+          </div>
+
+          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900">
+            Prueba la Interacción del Agente en Tiempo Real
+          </h2>
+
+          <p className="text-slate-600 text-sm md:text-base font-medium max-w-2xl mx-auto bg-amber-50/80 border border-amber-200/70 p-3.5 rounded-2xl text-amber-900 shadow-2xs">
+            A continuación puedes probar un chatbot real entrenado para responder como comercial del nicho clínico.
+          </p>
+        </div>
+
+        <WhatsAppChat onTriggerBooking={scrollToCalendar} />
+      </section>
+
+      {/* SECTION 3: Booking Calendar Section */}
       <BookingCalendar />
 
       {/* Corporate Footer */}

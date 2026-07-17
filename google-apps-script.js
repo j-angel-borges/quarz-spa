@@ -1,16 +1,21 @@
 /**
- * GOOGLE APPS SCRIPT - PIPELINE DE NOTIFICACIONES DE RESERVA QUARZ
+ * GOOGLE APPS SCRIPT - PIPELINE DE NOTIFICACIONES DE RESERVA
  * 
- * INSTRUCCIONES DE DESPLIEGUE:
- * 1. Abre tu hoja de cálculo en Google Sheets (o crea una nueva).
- * 2. Ve a Extensiones > Apps Script.
- * 3. Borra el código existente y pega este archivo completo.
- * 4. Haz clic en "Implementar" > "Nueva implementación".
- * 5. Tipo: "Aplicación web".
- * 6. Ejecutar como: "Yo" (tu cuenta de Google).
- * 7. Quién tiene acceso: "Cualquier persona" (Anyone).
- * 8. Copia la URL generada y pégala en la aplicación web en la constante VITE_APPS_SCRIPT_URL.
+ * INSTRUCCIONES:
+ * 1. Para autorizar permisos de envío de correo en Google:
+ *    - En el editor de Apps Script, selecciona la función "testSendEmail" en la barra superior.
+ *    - Haz clic en "Ejecutar".
+ *    - Concede los permisos a tu cuenta cuando Google lo pida.
  */
+
+function testSendEmail() {
+  var recipients = ["mipropiadinastia@gmail.com", "angel.borges@quarz.online"].join(",");
+  MailApp.sendEmail({
+    to: recipients,
+    subject: "✅ Prueba de Autorización de Correo Activa",
+    body: "Los permisos de correo están correctamente autorizados. Las reservas del formulario enviarán notificaciones automáticas."
+  });
+}
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -20,7 +25,11 @@ function doPost(e) {
     var data = {};
     
     if (e && e.postData && e.postData.contents) {
-      data = JSON.parse(e.postData.contents);
+      try {
+        data = JSON.parse(e.postData.contents);
+      } catch (err) {
+        data = e.parameter || {};
+      }
     } else if (e && e.parameter) {
       data = e.parameter;
     }
@@ -28,14 +37,14 @@ function doPost(e) {
     var fullName = data.fullName || 'No especificado';
     var companyName = data.companyName || 'No especificada';
     var email = data.email || 'No especificado';
+    var whatsapp = data.whatsapp || 'No especificado';
     var day = data.day || 'Sin fecha';
     var time = data.time || 'Sin hora';
     var timestamp = new Date().toLocaleString('es-ES', { timeZone: 'America/Mexico_City' });
 
-    // 1. Guardar en la hoja de Google Sheets activa
+    // 1. Guardar en la hoja activa
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     
-    // Si la hoja está vacía, agregar encabezados
     if (sheet.getLastRow() === 0) {
       sheet.appendRow([
         'Fecha Registro', 
@@ -43,22 +52,23 @@ function doPost(e) {
         'Hora Reservada', 
         'Nombre Completo', 
         'Empresa / Hospital', 
-        'Correo Electrónico'
+        'Correo Electrónico',
+        'WhatsApp'
       ]);
-      sheet.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#0F172A').setFontColor('#FFFFFF');
+      sheet.getRange(1, 1, 1, 7).setFontWeight('bold').setBackground('#0F172A').setFontColor('#FFFFFF');
     }
 
-    sheet.appendRow([timestamp, day, time, fullName, companyName, email]);
+    sheet.appendRow([timestamp, day, time, fullName, companyName, email, whatsapp]);
 
-    // 2. Destinatarios obligatorios de la notificación
+    // 2. Destinatarios de la notificación
     var recipients = [
       "mipropiadinastia@gmail.com",
       "angel.borges@quarz.online"
     ].join(",");
 
-    var subject = "🚨 Nueva Reserva Comercial QUARZ: " + companyName + " - " + day + " @ " + time;
+    var subject = "🚨 Nueva Reserva Comercial: " + companyName + " (" + fullName + ") - " + day + " @ " + time;
 
-    // 3. Plantilla HTML corporativa limpia con acentos dorados
+    // 3. Plantilla HTML corporativa
     var htmlBody = `
       <!DOCTYPE html>
       <html>
@@ -71,25 +81,25 @@ function doPost(e) {
           .header h1 { color: #ffffff; margin: 0; font-size: 22px; letter-spacing: 1px; }
           .header p { color: #d4af37; margin: 5px 0 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; }
           .content { padding: 30px; }
-          .badge { display: inline-block; background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 6px 12px; rounded-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 20px; }
+          .badge { display: inline-block; background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 20px; }
           .table-data { width: 100%; border-collapse: collapse; margin-top: 15px; }
           .table-data td { padding: 12px 15px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
           .label { color: #64748b; font-weight: 600; width: 40%; }
           .value { color: #0f172a; font-weight: bold; }
           .highlight { color: #b88e39; font-family: monospace; font-size: 15px; }
-          .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-t: 1px solid #f1f5f9; }
+          .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; }
         </style>
       </head>
       <body>
         <div class="card">
           <div class="header">
-            <h1>QUARZ Medical Systems</h1>
+            <h1>Medical AI Solutions</h1>
             <p>Notificación de Reserva Comercial</p>
           </div>
           <div class="content">
-            <div className="badge">📍 Prospecto Calificado por Agente IA</div>
+            <div class="badge">📍 Prospecto Calificado por Asistente IA</div>
             <p style="font-size: 15px; line-height: 1.5; color: #334155;">
-              Se ha agendado exitosamente una llamada de evaluación de distribución directa de indumentaria quirúrgica e insumos clínicos.
+              Se ha agendado una llamada de evaluación de abastecimiento de indumentaria e insumos clínicos.
             </p>
             
             <table class="table-data">
@@ -106,12 +116,16 @@ function doPost(e) {
                 <td class="value">${fullName}</td>
               </tr>
               <tr>
-                <td class="label">Empresa / Complejo:</td>
+                <td class="label">Empresa / Hospital:</td>
                 <td class="value">${companyName}</td>
               </tr>
               <tr>
                 <td class="label">Correo Profesional:</td>
                 <td class="value" style="color: #2563eb;">${email}</td>
+              </tr>
+              <tr>
+                <td class="label">Número WhatsApp:</td>
+                <td class="value" style="color: #16a34a; font-weight: bold;">${whatsapp}</td>
               </tr>
               <tr>
                 <td class="label">Fecha Registro:</td>
@@ -120,14 +134,13 @@ function doPost(e) {
             </table>
           </div>
           <div class="footer">
-            QUARZ AI Engine v3.5 • Proyecto GCP: gen-lang-client-0929068122
+            Medical AI Engine • Notificación Automática de Reserva
           </div>
         </div>
       </body>
       </html>
     `;
 
-    // Envío asíncrono obligatorio del correo electrónico
     MailApp.sendEmail({
       to: recipients,
       subject: subject,

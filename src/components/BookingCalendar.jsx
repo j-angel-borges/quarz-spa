@@ -9,7 +9,8 @@ import {
   Mail, 
   Send, 
   Sparkles, 
-  Check
+  Check,
+  Phone
 } from 'lucide-react';
 
 export default function BookingCalendar() {
@@ -55,7 +56,8 @@ export default function BookingCalendar() {
   const [formData, setFormData] = useState({
     fullName: '',
     companyName: '',
-    email: ''
+    email: '',
+    whatsapp: ''
   });
   const [appsScriptUrl, setAppsScriptUrl] = useState(
     import.meta.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxWAvO_N4Ycr79zaljl2_uwJ28_jOvDfqH8643eVtqLm6BEZH5rLtkLOvJKIuAX6mw0mw/exec'
@@ -84,7 +86,7 @@ export default function BookingCalendar() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.fullName || !formData.companyName || !formData.email) return;
+    if (!formData.fullName || !formData.companyName || !formData.email || !formData.whatsapp) return;
 
     setIsSubmitting(true);
 
@@ -92,6 +94,7 @@ export default function BookingCalendar() {
       fullName: formData.fullName,
       companyName: formData.companyName,
       email: formData.email,
+      whatsapp: formData.whatsapp,
       day: daysOfWeek.find(d => d.key === selectedDay)?.name,
       time: selectedTime,
       appsScriptUrl: appsScriptUrl
@@ -99,7 +102,7 @@ export default function BookingCalendar() {
 
     try {
       // POST request to Serverless Endpoint /api/booking
-      const response = await fetch('/api/booking', {
+      await fetch('/api/booking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -201,10 +204,14 @@ export default function BookingCalendar() {
                 <span className="text-slate-500">Correo:</span>
                 <span className="font-mono text-amber-800 text-xs">{bookingDetails?.email}</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">WhatsApp:</span>
+                <span className="font-mono text-emerald-800 text-xs font-bold">{bookingDetails?.whatsapp}</span>
+              </div>
 
               <div className="pt-3 border-t border-slate-200 text-[11px] text-slate-500 space-y-1">
                 <p className="flex items-center text-emerald-700">
-                  <Check className="w-3.5 h-3.5 mr-1" /> Notificación asíncrona procesada para:
+                  <Check className="w-3.5 h-3.5 mr-1" /> Notificación procesada para:
                 </p>
                 <ul className="pl-4 font-mono text-[10.5px] text-slate-600 list-disc">
                   <li>mipropiadinastia@gmail.com</li>
@@ -383,6 +390,25 @@ export default function BookingCalendar() {
                         onChange={handleChange}
                         placeholder="cmendoza@saludmetropolitana.com"
                         className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none text-slate-800 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Field: Número de WhatsApp */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Número de WhatsApp *
+                    </label>
+                    <div className="relative">
+                      <Phone className="w-4 h-4 text-emerald-600 absolute left-3 top-2.5" />
+                      <input
+                        type="tel"
+                        name="whatsapp"
+                        required
+                        value={formData.whatsapp}
+                        onChange={handleChange}
+                        placeholder="+52 55 1234 5678"
+                        className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none text-slate-800 font-mono"
                       />
                     </div>
                   </div>

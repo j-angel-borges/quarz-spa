@@ -12,16 +12,17 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { fullName, companyName, email, day, time, appsScriptUrl } = req.body || {};
+  const { fullName, companyName, email, whatsapp, day, time, appsScriptUrl } = req.body || {};
 
-  if (!fullName || !companyName || !email) {
-    return res.status(400).json({ error: 'Nombre, empresa y correo son obligatorios.' });
+  if (!fullName || !companyName || !email || !whatsapp) {
+    return res.status(400).json({ error: 'Nombre, empresa, correo y WhatsApp son obligatorios.' });
   }
 
   const payload = {
     fullName,
     companyName,
     email,
+    whatsapp,
     day: day || 'Próxima Cita',
     time: time || '11:00 AM',
     timestamp: new Date().toISOString()
@@ -30,7 +31,7 @@ export default async function handler(req, res) {
   const targetAppsScriptUrl = appsScriptUrl || process.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxWAvO_N4Ycr79zaljl2_uwJ28_jOvDfqH8643eVtqLm6BEZH5rLtkLOvJKIuAX6mw0mw/exec';
 
   try {
-    // Attempt POST to Google Apps Script Endpoint
+    // Forwarding payload to Google Apps Script Endpoint
     if (targetAppsScriptUrl && !targetAppsScriptUrl.includes('placeholder')) {
       const gRes = await fetch(targetAppsScriptUrl, {
         method: 'POST',
