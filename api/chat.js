@@ -34,29 +34,56 @@ REGLAS DE INTERACCIÓN CON EL USUARIO:
 `;
 
   try {
-    // Direct Google Cloud Platform (GCP) Vertex AI Configuration
-    const options = {
-      vertexai: true,
-      project: projectId,
-      location: location
-    };
+    // Autenticación GCP Vertex AI.
+    // IMPORTANTE: el SDK @google/genai NO permite combinar apiKey con project/location
+    // (lanza "Project/location and API key are mutually exclusive"). Con API key se usa
+    // Vertex AI "express mode" (solo vertexai + apiKey). Con service account se usa
+    // googleAuthOptions.credentials (pasar "credentials" suelto se ignora en silencio).
+    let clientOptions = null;
 
     if (process.env.GCP_SERVICE_ACCOUNT_KEY) {
       try {
-        options.credentials = JSON.parse(process.env.GCP_SERVICE_ACCOUNT_KEY);
+        const creds = JSON.parse(process.env.GCP_SERVICE_ACCOUNT_KEY);
+        if (creds.private_key) {
+          creds.private_key = creds.private_key.replace(/\\n/g, '\n');
+        }
+        clientOptions = {
+          vertexai: true,
+          project: projectId,
+          location: location,
+          googleAuthOptions: { credentials: creds }
+        };
       } catch (e) {
-        console.error("Error parsing GCP_SERVICE_ACCOUNT_KEY:", e.message);
+        // JSON mal pegado en la variable de entorno: no romper, probar la siguiente opción
+        console.error('GCP_SERVICE_ACCOUNT_KEY inválida, usando siguiente credencial:', e.message);
       }
-    } else if (process.env.GCP_CLIENT_EMAIL && process.env.GCP_PRIVATE_KEY) {
-      options.credentials = {
-        client_email: process.env.GCP_CLIENT_EMAIL,
-        private_key: process.env.GCP_PRIVATE_KEY.replace(/\\n/g, '\n')
-      };
-    } else if (process.env.GCP_API_KEY) {
-      options.apiKey = process.env.GCP_API_KEY.trim();
     }
 
-    const ai = new GoogleGenAI(options);
+    if (!clientOptions && process.env.GCP_CLIENT_EMAIL && process.env.GCP_PRIVATE_KEY) {
+      clientOptions = {
+        vertexai: true,
+        project: projectId,
+        location: location,
+        googleAuthOptions: {
+          credentials: {
+            client_email: process.env.GCP_CLIENT_EMAIL,
+            private_key: process.env.GCP_PRIVATE_KEY.replace(/\\n/g, '\n')
+          }
+        }
+      };
+    }
+
+    if (!clientOptions && process.env.GCP_API_KEY) {
+      // Vertex AI express mode: SIN project/location
+      clientOptions = { vertexai: true, apiKey: process.env.GCP_API_KEY.trim() };
+    }
+
+    if (!clientOptions) {
+      // Application Default Credentials (entorno GCP nativo)
+      clientOptions = { vertexai: true, project: projectId, location: location };
+    }
+
+    const ai = new GoogleGenAI(clientOptions);
 
     const contents = messages.map(m => ({
       role: m.sender === 'user' ? 'user' : 'model',
@@ -88,7 +115,7 @@ REGLAS DE INTERACCIÓN CON EL USUARIO:
     console.error("GCP Vertex AI Execution Error:", err.message);
   }
 
-  // Natural Fallback Engine if GCP API credentials are incomplete on Vercel
+  // Natural Fallback Engine
   const userLastMessage = messages[messages.length - 1]?.text || '';
   const lowerText = userLastMessage.toLowerCase().trim();
 

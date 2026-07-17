@@ -53,10 +53,8 @@ export default function BookingCalendar() {
     email: '',
     whatsapp: ''
   });
-  const [appsScriptUrl, setAppsScriptUrl] = useState(
-    import.meta.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzx9cMZXHiLt_FLVGinmWltBZrO3JjWCxiVxuBgK4cQJYxCMKaBVSIzW1wUXRMr_sVS1g/exec'
-  );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const [isBooked, setIsBooked] = useState(false);
   const [bookingDetails, setBookingDetails] = useState(null);
 
@@ -83,6 +81,7 @@ export default function BookingCalendar() {
     if (!formData.fullName || !formData.companyName || !formData.email || !formData.whatsapp) return;
 
     setIsSubmitting(true);
+    setSubmitError(null);
 
     const payload = {
       fullName: formData.fullName,
@@ -90,23 +89,19 @@ export default function BookingCalendar() {
       email: formData.email,
       whatsapp: formData.whatsapp,
       day: daysOfWeek.find(d => d.key === selectedDay)?.name,
-      time: selectedTime,
-      appsScriptUrl: appsScriptUrl
+      time: selectedTime
     };
 
     try {
-      await fetch('/api/booking', {
+      const res = await fetch('/api/booking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      const data = await res.json().catch(() => ({}));
 
-      if (appsScriptUrl && appsScriptUrl.includes('script.google.com')) {
-        fetch(appsScriptUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }).catch(err => console.log('Apps Script direct push:', err));
+      if (!res.ok || data.status !== 'success') {
+        throw new Error(data.message || 'No se pudo registrar la reserva.');
       }
 
       setIsSubmitting(false);
@@ -116,8 +111,7 @@ export default function BookingCalendar() {
     } catch (err) {
       console.error('Booking submission error:', err);
       setIsSubmitting(false);
-      setIsBooked(true);
-      setBookingDetails(payload);
+      setSubmitError('No pudimos registrar tu reserva en este momento. Por favor intenta nuevamente.');
     }
   };
 
@@ -411,6 +405,12 @@ export default function BookingCalendar() {
                       </>
                     )}
                   </button>
+
+                  {submitError && (
+                    <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-center">
+                      {submitError}
+                    </p>
+                  )}
                 </form>
               )}
             </div>

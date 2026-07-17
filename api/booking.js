@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { fullName, companyName, email, whatsapp, day, time, appsScriptUrl } = req.body || {};
+  const { fullName, companyName, email, whatsapp, day, time } = req.body || {};
 
   if (!fullName || !companyName || !email || !whatsapp) {
     return res.status(400).json({ error: 'Nombre, empresa, correo y WhatsApp son obligatorios.' });
@@ -28,20 +28,31 @@ export default async function handler(req, res) {
     timestamp: new Date().toISOString()
   };
 
-  const targetAppsScriptUrl = (appsScriptUrl || process.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzx9cMZXHiLt_FLVGinmWltBZrO3JjWCxiVxuBgK4cQJYxCMKaBVSIzW1wUXRMr_sVS1g/exec').trim();
+  // URL del despliegue vigente (@3) del Apps Script de notificaciones.
+  // NO se acepta una URL enviada por el cliente (evita redirección maliciosa de reservas)
+  // ni se usa VITE_APPS_SCRIPT_URL (apuntaba a un despliegue V1 ya eliminado).
+  const targetAppsScriptUrl = (process.env.APPS_SCRIPT_URL ||
+    'https://script.google.com/macros/s/AKfycbzx9cMZXHiLt_FLVGinmWltBZrO3JjWCxiVxuBgK4cQJYxCMKaBVSIzW1wUXRMr_sVS1g/exec').trim();
 
   try {
-    if (targetAppsScriptUrl && !targetAppsScriptUrl.includes('placeholder')) {
-      const gRes = await fetch(targetAppsScriptUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        redirect: 'follow'
-      });
-      console.log('Apps Script POST V3 status:', gRes.status);
+    const gRes = await fetch(targetAppsScriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      redirect: 'follow'
+    });
+    const gText = await gRes.text();
+    console.log('Apps Script status:', gRes.status, gText.slice(0, 200));
+
+    if (!gRes.ok || !gText.includes('"status":"success"')) {
+      throw new Error(`Apps Script respondió ${gRes.status}: ${gText.slice(0, 200)}`);
     }
   } catch (err) {
     console.error('Apps Script forwarding error:', err.message);
+    return res.status(502).json({
+      status: 'error',
+      message: 'La reserva no pudo registrarse. Intenta nuevamente en unos minutos.'
+    });
   }
 
   return res.status(200).json({
