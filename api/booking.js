@@ -28,17 +28,17 @@ export default async function handler(req, res) {
     timestamp: new Date().toISOString()
   };
 
-  const targetAppsScriptUrl = appsScriptUrl || process.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxWAvO_N4Ycr79zaljl2_uwJ28_jOvDfqH8643eVtqLm6BEZH5rLtkLOvJKIuAX6mw0mw/exec';
+  const targetAppsScriptUrl = appsScriptUrl || process.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzx9cMZXHiLt_FLVGinmWltBZrO3JjWCxiVxuBgK4cQJYxCMKaBVSIzW1wUXRMr_sVS1g/exec';
 
   try {
-    // Forwarding payload to Google Apps Script Endpoint
     if (targetAppsScriptUrl && !targetAppsScriptUrl.includes('placeholder')) {
       const gRes = await fetch(targetAppsScriptUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        redirect: 'follow'
       });
-      console.log('Apps Script POST status:', gRes.status);
+      console.log('Apps Script POST V3 status:', gRes.status);
     }
   } catch (err) {
     console.error('Apps Script forwarding error:', err.message);

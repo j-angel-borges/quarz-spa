@@ -1,11 +1,5 @@
 /**
  * GOOGLE APPS SCRIPT - PIPELINE DE NOTIFICACIONES DE RESERVA
- * 
- * INSTRUCCIONES:
- * 1. Para autorizar permisos de envío de correo en Google:
- *    - En el editor de Apps Script, selecciona la función "testSendEmail" en la barra superior.
- *    - Haz clic en "Ejecutar".
- *    - Concede los permisos a tu cuenta cuando Google lo pida.
  */
 
 function testSendEmail() {
@@ -42,25 +36,30 @@ function doPost(e) {
     var time = data.time || 'Sin hora';
     var timestamp = new Date().toLocaleString('es-ES', { timeZone: 'America/Mexico_City' });
 
-    // 1. Guardar en la hoja activa
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow([
-        'Fecha Registro', 
-        'Día Reservado', 
-        'Hora Reservada', 
-        'Nombre Completo', 
-        'Empresa / Hospital', 
-        'Correo Electrónico',
-        'WhatsApp'
-      ]);
-      sheet.getRange(1, 1, 1, 7).setFontWeight('bold').setBackground('#0F172A').setFontColor('#FFFFFF');
+    // 1. Intento seguro de guardado en Hoja (si está vinculada a un Google Sheet)
+    try {
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      if (ss) {
+        var sheet = ss.getActiveSheet();
+        if (sheet.getLastRow() === 0) {
+          sheet.appendRow([
+            'Fecha Registro', 
+            'Día Reservado', 
+            'Hora Reservada', 
+            'Nombre Completo', 
+            'Empresa / Hospital', 
+            'Correo Electrónico',
+            'WhatsApp'
+          ]);
+          sheet.getRange(1, 1, 1, 7).setFontWeight('bold').setBackground('#0F172A').setFontColor('#FFFFFF');
+        }
+        sheet.appendRow([timestamp, day, time, fullName, companyName, email, whatsapp]);
+      }
+    } catch (sheetErr) {
+      Logger.log("Info: Script ejecutado como Standalone app sin Hoja activa: " + sheetErr.toString());
     }
 
-    sheet.appendRow([timestamp, day, time, fullName, companyName, email, whatsapp]);
-
-    // 2. Destinatarios de la notificación
+    // 2. Destinatarios obligatorios de la notificación
     var recipients = [
       "mipropiadinastia@gmail.com",
       "angel.borges@quarz.online"
@@ -141,6 +140,7 @@ function doPost(e) {
       </html>
     `;
 
+    // 4. Envío obligatorio de correo
     MailApp.sendEmail({
       to: recipients,
       subject: subject,

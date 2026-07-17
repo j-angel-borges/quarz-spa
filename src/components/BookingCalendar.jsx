@@ -37,12 +37,6 @@ export default function BookingCalendar() {
     '08:00 PM'
   ];
 
-  // Hardcoded availability matrix according to strict prompt specs
-  // Lunes: 11:00 AM
-  // Martes: 11:00 AM, 02:00 PM, 06:00 PM
-  // Miércoles: 02:00 PM
-  // Jueves: None (All occupied)
-  // Viernes: 11:00 AM
   const availability = {
     lunes: ['11:00 AM'],
     martes: ['11:00 AM', '02:00 PM', '06:00 PM'],
@@ -60,7 +54,7 @@ export default function BookingCalendar() {
     whatsapp: ''
   });
   const [appsScriptUrl, setAppsScriptUrl] = useState(
-    import.meta.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxWAvO_N4Ycr79zaljl2_uwJ28_jOvDfqH8643eVtqLm6BEZH5rLtkLOvJKIuAX6mw0mw/exec'
+    import.meta.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzx9cMZXHiLt_FLVGinmWltBZrO3JjWCxiVxuBgK4cQJYxCMKaBVSIzW1wUXRMr_sVS1g/exec'
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isBooked, setIsBooked] = useState(false);
@@ -101,21 +95,18 @@ export default function BookingCalendar() {
     };
 
     try {
-      // POST request to Serverless Endpoint /api/booking
       await fetch('/api/booking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      // Also attempt direct POST to Apps Script Endpoint if configured
       if (appsScriptUrl && appsScriptUrl.includes('script.google.com')) {
         fetch(appsScriptUrl, {
           method: 'POST',
-          mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
-        }).catch(err => console.log('Apps Script no-cors push:', err));
+        }).catch(err => console.log('Apps Script direct push:', err));
       }
 
       setIsSubmitting(false);
@@ -163,7 +154,7 @@ export default function BookingCalendar() {
         </div>
 
         {isBooked ? (
-          /* Success Screen */
+          /* Success Screen - Cleaned of Internal Email List */
           <div className="p-8 md:p-16 text-center space-y-6 animate-fade-in">
             <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto border-4 border-emerald-50 shadow-inner">
               <CheckCircle className="w-10 h-10 animate-bounce" />
@@ -177,7 +168,7 @@ export default function BookingCalendar() {
                 ¡Llamada Agendada! Revisa tu bandeja de entrada
               </h3>
               <p className="text-slate-600 text-sm max-w-lg mx-auto">
-                Hemos recibido tu solicitud corporativa. Se ha enviado una notificación de confirmación duplicada a las direcciones indicadas.
+                Hemos recibido tu solicitud corporativa. Te hemos enviado un resumen de confirmación a tu correo electrónico.
               </p>
             </div>
 
@@ -207,16 +198,6 @@ export default function BookingCalendar() {
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">WhatsApp:</span>
                 <span className="font-mono text-emerald-800 text-xs font-bold">{bookingDetails?.whatsapp}</span>
-              </div>
-
-              <div className="pt-3 border-t border-slate-200 text-[11px] text-slate-500 space-y-1">
-                <p className="flex items-center text-emerald-700">
-                  <Check className="w-3.5 h-3.5 mr-1" /> Notificación procesada para:
-                </p>
-                <ul className="pl-4 font-mono text-[10.5px] text-slate-600 list-disc">
-                  <li>mipropiadinastia@gmail.com</li>
-                  <li>angel.borges@quarz.online</li>
-                </ul>
               </div>
             </div>
 
