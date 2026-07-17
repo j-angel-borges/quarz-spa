@@ -1,3 +1,4 @@
+import { GoogleAuth } from 'google-auth-library';
 import { GoogleGenAI } from '@google/genai';
 
 export default async function handler(req, res) {
@@ -20,77 +21,86 @@ export default async function handler(req, res) {
   }
 
   const apiKey = process.env.GCP_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GCP_API_KEY || '';
-  const userLastMessage = messages[messages.length - 1]?.text || '';
-  const lowerText = userLastMessage.toLowerCase().trim();
-
-  // Strict Off-Topic Guardrail Check
-  const offTopicKeywords = ['pañal', 'pañales', 'bebé', 'bebe', 'software', 'auto', 'coches', 'comida', 'zapatos', 'televisor', 'juguete'];
-  const isOffTopic = offTopicKeywords.some(kw => lowerText.includes(kw));
-
-  if (isOffTopic) {
-    return res.status(200).json({
-      text: "Nos especializamos exclusivamente en distribución mayorista de indumentaria quirúrgica y material médico crítico. No comercializamos ese producto.",
-      isQualified: false,
-      triggerBooking: false
-    });
-  }
-
-  // Conversion Trigger Keyword Check (if user wants to schedule or confirmed qualification)
-  const isSchedulingIntent = lowerText.includes('agendar') || lowerText.includes('cita') || lowerText.includes('llamada') || lowerText.includes('comprar insumos') || lowerText.includes('necesitamos batas');
-  if (isSchedulingIntent) {
-    return res.status(200).json({
-      text: "Perfecto. Cumplen con el perfil de distribución directa. Selecciona un bloque en el calendario de abajo para coordinar la llamada con nuestro especialista.",
-      isQualified: true,
-      triggerBooking: true
-    });
-  }
+  const projectId = process.env.GCP_PROJECT_ID || 'gen-lang-client-0929068122';
 
   const systemInstruction = `
-Eres un capacitado Appointment Setter para distribución mayorista de indumentaria clínica, batas de protección y suministros hospitalarios de alta demanda.
+Eres un capacitado y empático Appointment Setter profesional para una distribuidora mayorista de indumentaria clínica, batas esterilizadas e insumos hospitalarios.
 
-Tus reglas de comportamiento:
-1. Tono y Estilo: Profesional, fluido, conciso (máximo 2 líneas por mensaje). Evita muletillas y repeticiones.
-2. Si el usuario saluda o pregunta "¿De qué me hablas?", "¿Quién eres?" o muestra dudas: Responde con amabilidad explicando que gestionas el abastecimiento de batas e indumentaria clínica para hospitales y clínicas, y pregúntale qué volumen necesitan.
-3. Guardarraíles de nicho: Si preguntan sobre productos fuera de insumos médicos, tu respuesta DEBE ser estrictamente:
-"Nos especializamos exclusivamente en distribución mayorista de indumentaria quirúrgica y material médico crítico. No comercializamos ese producto."
-4. Gatillo de Conversión: Si el usuario califica como cliente hospitalario interesado, tu respuesta final de cierre DEBE ser EXACTAMENTE:
+REGLAS DE INTERACCIÓN CON EL USUARIO:
+1. Tono y Estilo: Inteligente, fluido, humano y corporativo. Responde siempre en máximo 2 o 3 líneas con lenguaje natural.
+2. Adaptabilidad Conversacional: Si el usuario muestra confusión, saluda o pregunta cosas como "¿De qué me hablas?", "¿Quién eres?", "¿Qué hacen?" o cambia de tema de manera informal, responde de forma 100% fluida y natural explicando que te comunicas para atender el abastecimiento de indumentaria clínica e insumos médicos de su centro hospitalario o clínica.
+3. Guardarraíles de Nicho: Si el usuario pregunta por productos completamente ajenos (ej. pañales, ropa de bebé, automóviles, software, alimentos), aclara con total cortesía: "Nos especializamos exclusivamente en distribución mayorista de indumentaria clínica e insumos hospitalarios. No comercializamos ese producto." y reorienta amablemente.
+4. Cierre y Agendamiento: Cuando el usuario confirme que representa a un hospital, clínica o central médica con necesidad de insumos o pida agendar una reunión, incluye al final el mensaje de cierre:
 "Perfecto. Cumplen con el perfil de distribución directa. Selecciona un bloque en el calendario de abajo para coordinar la llamada con nuestro especialista."
 `;
 
   try {
     let aiResponseText = '';
 
+    // Strategy 1: Google AI Studio Key (AIzaSy...)
     if (apiKey && apiKey.startsWith('AIza')) {
       const ai = new GoogleGenAI({ apiKey });
-      const historyPrompt = messages.map(m => `${m.sender === 'user' ? 'Lead' : 'Setter'}: ${m.text}`).join('\n');
-      const fullPrompt = `${systemInstruction}\n\nHistorial:\n${historyPrompt}\n\nSetter:`;
-      
+      const contents = messages.map(m => ({
+        role: m.sender === 'user' ? 'user' : 'model',
+        parts: [{ text: m.text }]
+      }));
+
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: fullPrompt,
-        config: { temperature: 0.3, maxOutputTokens: 150 }
+        contents: contents,
+        config: {
+          systemInstruction: systemInstruction,
+          temperature: 0.7,
+          maxOutputTokens: 200
+        }
       });
       aiResponseText = response.text ? response.text.trim() : '';
-    } else if (apiKey) {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-      const historyPrompt = messages.map(m => `${m.sender === 'user' ? 'Lead' : 'Setter'}: ${m.text}`).join('\n');
-      const fullPrompt = `${systemInstruction}\n\nHistorial:\n${historyPrompt}\n\nSetter:`;
+    } 
 
-      const gcpRes = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: fullPrompt }] }],
-          generationConfig: { maxOutputTokens: 150, temperature: 0.3 }
-        })
-      });
+    // Strategy 2: Vertex AI on GCP with GoogleAuth ADC / OAuth Token
+    if (!aiResponseText) {
+      try {
+        const auth = new GoogleAuth({
+          scopes: 'https://www.googleapis.com/auth/cloud-platform'
+        });
+        const client = await auth.getClient();
+        const token = await client.getAccessToken();
 
-      if (gcpRes.ok) {
-        const gcpData = await gcpRes.json();
-        aiResponseText = gcpData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+        if (token && token.token) {
+          const endpoint = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent`;
+          
+          const contents = messages.map(m => ({
+            role: m.sender === 'user' ? 'user' : 'model',
+            parts: [{ text: m.text }]
+          }));
+
+          const vertexRes = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token.token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: systemInstruction }] },
+              contents: contents,
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 200
+              }
+            })
+          });
+
+          if (vertexRes.ok) {
+            const vertexData = await vertexRes.json();
+            aiResponseText = vertexData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+          }
+        }
+      } catch (authErr) {
+        console.log('Vertex Auth fallback:', authErr.message);
       }
     }
 
+    // Return real AI response if generated
     if (aiResponseText) {
       const triggerBooking = aiResponseText.includes("calendario de abajo") || aiResponseText.includes("perfil de distribución directa");
       return res.status(200).json({
@@ -101,26 +111,23 @@ Tus reglas de comportamiento:
     }
 
   } catch (err) {
-    console.error("Gemini model error:", err);
+    console.error("Gemini live execution error:", err);
   }
 
-  // Dynamic Natural Fallback Engine
-  let dynamicResponse = "";
+  // Fallback in case of unexpected network issue
+  const userLastMessage = messages[messages.length - 1]?.text || '';
+  const lowerText = userLastMessage.toLowerCase().trim();
+
+  let fallbackText = "Hola, le hablo de la división de distribución de indumentaria clínica e insumos médicos para clínicas y hospitales. ¿Tienen necesidad de abastecimiento actualmente?";
   let triggerBooking = false;
 
-  if (lowerText.includes('de que me hablas') || lowerText.includes('de qué hablas') || lowerText.includes('quien eres') || lowerText.includes('quién eres') || lowerText.includes('hola') || lowerText.includes('que es esto')) {
-    dynamicResponse = "Le contacto sobre el abastecimiento de batas e indumentaria de especialidad clínica. Proveemos insumos esterilizados directos a centros de salud. ¿Tienen requerimientos esta semana?";
-  } else if (lowerText.includes('cuanto') || lowerText.includes('precio') || lowerText.includes('costo') || lowerText.includes('catalogo')) {
-    dynamicResponse = "Manejamos precios escalonados por volumen mayorista. Para presentarle nuestro catálogo institucional, coordinemos una breve reunión con nuestro equipo.";
-  } else if (lowerText.includes('si') || lowerText.includes('sí') || lowerText.includes('clínica') || lowerText.includes('hospital') || lowerText.includes('compramos') || lowerText.includes('requerimos')) {
-    dynamicResponse = "Perfecto. Cumplen con el perfil de distribución directa. Selecciona un bloque en el calendario de abajo para coordinar la llamada con nuestro especialista.";
+  if (lowerText.includes('agendar') || lowerText.includes('cita') || lowerText.includes('llamada')) {
+    fallbackText = "Perfecto. Cumplen con el perfil de distribución directa. Selecciona un bloque en el calendario de abajo para coordinar la llamada con nuestro especialista.";
     triggerBooking = true;
-  } else {
-    dynamicResponse = "Para evaluar su volumen de compra e indumentaria clínica requerida, ¿a qué centro o institución médica representa?";
   }
 
   return res.status(200).json({
-    text: dynamicResponse,
+    text: fallbackText,
     isQualified: true,
     triggerBooking: triggerBooking
   });
