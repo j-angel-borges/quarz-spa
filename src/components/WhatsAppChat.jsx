@@ -8,18 +8,14 @@ import {
   Phone, 
   Video, 
   CheckCheck, 
-  ShieldCheck,
-  Bot,
-  Sparkles,
-  ArrowDown
+  Bot
 } from 'lucide-react';
 
 export default function WhatsAppChat({ onTriggerBooking }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [interactionCount, setInteractionCount] = useState(0);
-  const messagesEndRef = useRef(null);
+  const chatBodyRef = useRef(null);
 
   const getCurrentTime = () => {
     const now = new Date();
@@ -36,20 +32,22 @@ export default function WhatsAppChat({ onTriggerBooking }) {
           {
             id: 1,
             sender: 'agent',
-            text: 'Hola, vi que gestionan la logística del complejo hospitalario. ¿Cómo están resolviendo el desabastecimiento de indumentaria quirúrgica esta semana?',
+            text: 'Hola, vi que gestionan la logística del complejo hospitalario. ¿Cómo están resolviendo el abastecimiento de indumentaria clínica y batas de especialidad esta semana?',
             time: getCurrentTime()
           }
         ]);
-      }, 1800);
+      }, 1500);
       return () => clearTimeout(typingDelay);
-    }, 600);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, []);
 
-  // Auto-scroll to bottom of chat bubbles
+  // Internal Chat Container Auto-scroll (Does NOT scroll the entire page window)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+    }
   }, [messages, isTyping]);
 
   const handleSendMessage = async (textToSend) => {
@@ -66,11 +64,10 @@ export default function WhatsAppChat({ onTriggerBooking }) {
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInputText('');
-    setInteractionCount(prev => prev + 1);
 
-    // Simulate natural typing delay (1.5s to 2.5s)
+    // Simulate natural typing delay (1.5s to 2.2s)
     setIsTyping(true);
-    const randomDelay = Math.floor(Math.random() * 1000) + 1500;
+    const randomDelay = Math.floor(Math.random() * 700) + 1500;
 
     try {
       const response = await fetch('/api/chat', {
@@ -86,7 +83,7 @@ export default function WhatsAppChat({ onTriggerBooking }) {
         const agentMsg = {
           id: Date.now() + 1,
           sender: 'agent',
-          text: data.text || 'Nos especializamos en distribución mayorista de suministros médicos. ¿Podemos agendar una breve llamada?',
+          text: data.text || 'Nos especializamos en distribución mayorista de insumos hospitalarios. ¿Podemos coordinar una breve llamada?',
           time: getCurrentTime()
         };
         setMessages(prev => [...prev, agentMsg]);
@@ -132,20 +129,8 @@ export default function WhatsAppChat({ onTriggerBooking }) {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl border border-neutral-200/80 bg-white glass-card">
-      {/* Top Banner Tag */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white px-4 py-2 text-xs flex items-center justify-between border-b border-amber-500/30">
-        <div className="flex items-center space-x-2">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-          <span className="font-medium tracking-wide text-amber-200/90">
-            QUARZ AI Engine v3.5 • Proyecto GCP: <code className="text-amber-300 font-mono">gen-lang-client-0929068122</code>
-          </span>
-        </div>
-        <span className="hidden md:inline-flex items-center text-slate-300 text-[11px]">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 mr-1" /> Agent Status: Active & Qualified
-        </span>
-      </div>
-
+    <div className="w-full max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl border border-slate-200/80 bg-white glass-card">
+      
       {/* WhatsApp Institutional Header */}
       <div className="bg-[#075E54] text-white px-4 py-3 flex items-center justify-between shadow-md">
         <div className="flex items-center space-x-3">
@@ -159,7 +144,7 @@ export default function WhatsAppChat({ onTriggerBooking }) {
           <div>
             <div className="flex items-center space-x-1.5">
               <h3 className="font-semibold text-sm leading-tight text-white">
-                Agente QUARZ Medical Systems
+                Agente Comercial de Abastecimiento
               </h3>
               <span className="bg-amber-400/20 text-amber-300 text-[10px] px-1.5 py-0.5 rounded border border-amber-400/40 font-mono">
                 IA Mayorista
@@ -171,7 +156,7 @@ export default function WhatsAppChat({ onTriggerBooking }) {
                   Escribiendo...
                 </span>
               ) : (
-                <span>en línea • Distribución Clínica Quirúrgica</span>
+                <span>en línea • Suministros e Indumentaria Clínica</span>
               )}
             </p>
           </div>
@@ -194,12 +179,15 @@ export default function WhatsAppChat({ onTriggerBooking }) {
         </div>
       </div>
 
-      {/* WhatsApp Body Chat Area */}
-      <div className="wa-bg-pattern h-[420px] overflow-y-auto p-4 md:p-6 space-y-4 relative">
+      {/* WhatsApp Body Chat Area - FIXED CONTAINER SCROLL */}
+      <div 
+        ref={chatBodyRef}
+        className="wa-bg-pattern h-[420px] overflow-y-auto p-4 md:p-6 space-y-4 relative"
+      >
         {/* Security Encryption Notice */}
         <div className="flex justify-center my-2">
           <div className="bg-[#FFEECD] text-[#54656F] text-[11px] px-3 py-1.5 rounded-lg shadow-xs max-w-xs text-center border border-[#F4D9A0] font-sans">
-            🔒 Los mensajes están cifrados de extremo a extremo. QUARZ AI Setter califica su abastecimiento institucional en tiempo real.
+            🔒 Los mensajes están cifrados de extremo a extremo. El asistente evalúa su abastecimiento institucional en tiempo real.
           </div>
         </div>
 
@@ -217,7 +205,7 @@ export default function WhatsAppChat({ onTriggerBooking }) {
             >
               {msg.sender === 'agent' && (
                 <div className="text-[11px] font-semibold text-emerald-800 mb-0.5 flex items-center space-x-1">
-                  <span>QUARZ Medical AI</span>
+                  <span>Asistente Comercial</span>
                   <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1 rounded font-normal">Oficial</span>
                 </div>
               )}
@@ -246,15 +234,13 @@ export default function WhatsAppChat({ onTriggerBooking }) {
             </div>
           </div>
         )}
-
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Suggested Quick Response Chips */}
       <div className="bg-slate-50 border-t border-slate-200/80 p-2.5 px-4 flex flex-wrap gap-2 items-center text-xs">
         <span className="text-slate-400 font-medium text-[11px] mr-1">Pruebas rápidas:</span>
         <button
-          onClick={() => handleSendMessage('Requerimos 2,000 batas quirúrgicas e insumos esterilizados semanales.')}
+          onClick={() => handleSendMessage('Requerimos 2,000 batas clínicas e insumos esterilizados semanales.')}
           className="bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 hover:border-amber-300 rounded-full px-3 py-1 transition cursor-pointer shadow-2xs text-[11.5px]"
         >
           🏥 Pedido hospitalario masivo (Calificar)

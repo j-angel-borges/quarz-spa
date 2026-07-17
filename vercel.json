@@ -3,6 +3,10 @@
     {
       "source": "/api/chat",
       "destination": "/api/chat.js"
+    },
+    {
+      "source": "/api/booking",
+      "destination": "/api/booking.js"
     }
   ]
 }

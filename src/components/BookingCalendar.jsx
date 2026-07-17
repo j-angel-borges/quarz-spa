@@ -9,18 +9,16 @@ import {
   Mail, 
   Send, 
   Sparkles, 
-  AlertCircle,
-  ShieldCheck,
   Check
 } from 'lucide-react';
 
 export default function BookingCalendar() {
   const daysOfWeek = [
-    { key: 'lunes', name: 'Lunes', date: 'Próximo Lunes' },
-    { key: 'martes', name: 'Martes', date: 'Próximo Martes' },
-    { key: 'miercoles', name: 'Miércoles', date: 'Próximo Miércoles' },
-    { key: 'jueves', name: 'Jueves', date: 'Próximo Jueves' },
-    { key: 'viernes', name: 'Viernes', date: 'Próximo Viernes' }
+    { key: 'lunes', name: 'Lunes' },
+    { key: 'martes', name: 'Martes' },
+    { key: 'miercoles', name: 'Miércoles' },
+    { key: 'jueves', name: 'Jueves' },
+    { key: 'viernes', name: 'Viernes' }
   ];
 
   const timeSlots = [
@@ -60,7 +58,7 @@ export default function BookingCalendar() {
     email: ''
   });
   const [appsScriptUrl, setAppsScriptUrl] = useState(
-    import.meta.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzScggadht6fUUxv9NksNvBqGl9x5ftWeG4Z_jztnli3fLSZ5SWVKw8pcl3UesmUGnIrQ/exec'
+    import.meta.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxWAvO_N4Ycr79zaljl2_uwJ28_jOvDfqH8643eVtqLm6BEZH5rLtkLOvJKIuAX6mw0mw/exec'
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isBooked, setIsBooked] = useState(false);
@@ -96,22 +94,25 @@ export default function BookingCalendar() {
       email: formData.email,
       day: daysOfWeek.find(d => d.key === selectedDay)?.name,
       time: selectedTime,
-      createdAt: new Date().toISOString()
+      appsScriptUrl: appsScriptUrl
     };
 
     try {
-      // POST request to Google Apps Script Endpoint
-      if (appsScriptUrl && !appsScriptUrl.includes('placeholder')) {
-        await fetch(appsScriptUrl, {
+      // POST request to Serverless Endpoint /api/booking
+      const response = await fetch('/api/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      // Also attempt direct POST to Apps Script Endpoint if configured
+      if (appsScriptUrl && appsScriptUrl.includes('script.google.com')) {
+        fetch(appsScriptUrl, {
           method: 'POST',
-          mode: 'no-cors', // Apps Script standard fetch mode
+          mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
-        });
-      } else {
-        // Console simulation when testing before user deploys Apps Script
-        console.log('Apps Script Payload sent:', payload);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        }).catch(err => console.log('Apps Script no-cors push:', err));
       }
 
       setIsSubmitting(false);
@@ -121,7 +122,6 @@ export default function BookingCalendar() {
     } catch (err) {
       console.error('Booking submission error:', err);
       setIsSubmitting(false);
-      // Even if network CORS suppresses standard response, show successful booking state
       setIsBooked(true);
       setBookingDetails(payload);
     }
@@ -141,10 +141,10 @@ export default function BookingCalendar() {
                 <span>Agendamiento Directo Especializado</span>
               </div>
               <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
-                Reserva de Llamada Comercial Quirúrgica
+                Reserva de Llamada Comercial Especializada
               </h2>
               <p className="text-slate-300 text-sm mt-1 max-w-xl font-light">
-                Selecciona un bloque de disponibilidad confirmado para coordinar la logística con nuestro equipo técnico en <strong className="text-amber-300">QUARZ</strong>.
+                Selecciona un bloque de disponibilidad confirmado para coordinar la logística con nuestro equipo técnico.
               </p>
             </div>
 
@@ -154,7 +154,7 @@ export default function BookingCalendar() {
                 <span className="font-semibold text-white">Ventana Horaria:</span>
               </div>
               <p className="font-mono text-amber-200">09:00 AM – 08:00 PM</p>
-              <p className="text-[10px] text-slate-400">Notificaciones a emails institucionales</p>
+              <p className="text-[10px] text-slate-400">Notificación automática a emails institucionales</p>
             </div>
           </div>
         </div>
@@ -182,7 +182,7 @@ export default function BookingCalendar() {
             <div className="max-w-md mx-auto bg-slate-50 border border-slate-200 rounded-2xl p-6 text-left space-y-3 shadow-sm text-sm">
               <div className="flex justify-between items-center pb-3 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
                 <span>Detalle de la Cita</span>
-                <span className="text-amber-800 font-mono">ID: QRZ-{Math.floor(1000 + Math.random() * 9000)}</span>
+                <span className="text-amber-800 font-mono">ID: REF-{Math.floor(1000 + Math.random() * 9000)}</span>
               </div>
               
               <div className="flex items-center justify-between">
@@ -204,7 +204,7 @@ export default function BookingCalendar() {
 
               <div className="pt-3 border-t border-slate-200 text-[11px] text-slate-500 space-y-1">
                 <p className="flex items-center text-emerald-700">
-                  <Check className="w-3.5 h-3.5 mr-1" /> Notificación asíncrona enviada a:
+                  <Check className="w-3.5 h-3.5 mr-1" /> Notificación asíncrona procesada para:
                 </p>
                 <ul className="pl-4 font-mono text-[10.5px] text-slate-600 list-disc">
                   <li>mipropiadinastia@gmail.com</li>
@@ -224,7 +224,7 @@ export default function BookingCalendar() {
           /* Main Calendar & Form Grid */
           <div className="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            {/* Left Column: Interactive Weekly Calendar Matrix (7 cols) */}
+            {/* Left Column: Interactive Weekly Calendar Matrix */}
             <div className="lg:col-span-7 space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-lg text-slate-900 flex items-center">
@@ -245,7 +245,6 @@ export default function BookingCalendar() {
                       key={d.key}
                       onClick={() => {
                         setSelectedDay(d.key);
-                        // Pick first available slot or null
                         const firstAvail = availability[d.key]?.[0] || null;
                         setSelectedTime(firstAvail);
                       }}
@@ -313,7 +312,7 @@ export default function BookingCalendar() {
               </div>
             </div>
 
-            {/* Right Column: Reservation Form (5 cols) */}
+            {/* Right Column: Reservation Form */}
             <div className="lg:col-span-5 bg-slate-50 border border-slate-200/80 rounded-2xl p-6 space-y-5">
               <div>
                 <h3 className="font-bold text-slate-900 text-base flex items-center">
@@ -386,22 +385,6 @@ export default function BookingCalendar() {
                         className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none text-slate-800 font-mono"
                       />
                     </div>
-                  </div>
-
-                  {/* Apps Script Endpoint Config Option */}
-                  <div className="pt-2 border-t border-slate-200">
-                    <details className="text-[11px] text-slate-400 cursor-pointer">
-                      <summary className="font-medium hover:text-slate-600">
-                        ⚙️ Endpoint Apps Script (Google Sheets Web App)
-                      </summary>
-                      <input
-                        type="url"
-                        value={appsScriptUrl}
-                        onChange={(e) => setAppsScriptUrl(e.target.value)}
-                        placeholder="https://script.google.com/macros/s/.../exec"
-                        className="w-full mt-1.5 p-1.5 bg-white border border-slate-300 rounded text-[10px] font-mono text-slate-700"
-                      />
-                    </details>
                   </div>
 
                   <button
