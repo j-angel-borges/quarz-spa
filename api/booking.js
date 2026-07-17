@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     timestamp: new Date().toISOString()
   };
 
-  const targetAppsScriptUrl = appsScriptUrl || process.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzx9cMZXHiLt_FLVGinmWltBZrO3JjWCxiVxuBgK4cQJYxCMKaBVSIzW1wUXRMr_sVS1g/exec';
+  const targetAppsScriptUrl = (appsScriptUrl || process.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzx9cMZXHiLt_FLVGinmWltBZrO3JjWCxiVxuBgK4cQJYxCMKaBVSIzW1wUXRMr_sVS1g/exec').trim();
 
   try {
     if (targetAppsScriptUrl && !targetAppsScriptUrl.includes('placeholder')) {
