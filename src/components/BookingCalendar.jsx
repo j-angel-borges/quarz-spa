@@ -60,7 +60,7 @@ export default function BookingCalendar() {
     email: ''
   });
   const [appsScriptUrl, setAppsScriptUrl] = useState(
-    import.meta.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbx_placeholder/exec'
+    import.meta.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzScggadht6fUUxv9NksNvBqGl9x5ftWeG4Z_jztnli3fLSZ5SWVKw8pcl3UesmUGnIrQ/exec'
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isBooked, setIsBooked] = useState(false);
